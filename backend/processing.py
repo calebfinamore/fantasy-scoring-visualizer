@@ -77,8 +77,7 @@ def calculate_fantasy_points(df: pd.DataFrame, weights: ScoringWeights, is_pitch
         if col not in df.columns:
             df[col] = 0
         else:
-            df[col] = df[col].fillna(0)
-        
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)        
     if not is_pitcher:
         # Derive composite stats if they aren't explicitly in the dataset
         singles = df.get('H', 0) - df.get('2B', 0) - df.get('3B', 0) - df.get('HR', 0)
