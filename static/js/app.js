@@ -1,18 +1,15 @@
 // --- TAB SWITCHING LOGIC ---
 function switchTab(tabId) {
-    // Hide all tab content
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    // Remove active class from all buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Show the selected tab and highlight the button
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`${tabId}-content`).classList.add('active');
     document.getElementById(`tab-${tabId}`).classList.add('active');
+
+    setTimeout(() => {
+        document.querySelectorAll(`#${tabId}-content .graph-container`).forEach(el => {
+            Plotly.relayout(el, { autosize: true });
+        });
+    }, 10);
 }
 
 // --- PRESET SCORING DICTIONARIES ---
@@ -73,8 +70,7 @@ document.getElementById('btn-reset').addEventListener('click', () => fillInputs(
 document.getElementById('btn-calculate').addEventListener('click', async () => {
     const calculateBtn = document.getElementById('btn-calculate');
     calculateBtn.innerText = "CALCULATING...";
-    calculateBtn.style.backgroundColor = "#ff0000";
-    calculateBtn.style.color = "#ffffff";
+    calculateBtn.style.backgroundColor = "#647ac4";
 
     const payload = gatherWeights();
 
@@ -113,7 +109,7 @@ document.getElementById('btn-calculate').addEventListener('click', async () => {
         alert("Failed to connect to the backend.");
     } finally {
         calculateBtn.innerText = "RUN CALCULATIONS";
-        calculateBtn.style.backgroundColor = "#ffff00";
+        calculateBtn.style.backgroundColor = "#fbbf24";
         calculateBtn.style.color = "#000000";
     }
 });

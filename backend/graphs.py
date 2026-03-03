@@ -11,7 +11,7 @@ def create_scatterplot(df, x_col, title, xaxis_title):
     
     # If the column doesn't exist (e.g., SIERA isn't in Steamer projections), return an empty figure
     if x_col not in df.columns:
-        return json.loads(go.Figure().update_layout(title=f"Data for {x_col} not available").to_json())
+        return json.loads(go.Figure().update_layout(template='plotly_dark', font=dict(family='monospace'), autosize=True, title=f"Data for {x_col} not available").to_json())
     
     fig = px.scatter(
         df, 
@@ -24,7 +24,7 @@ def create_scatterplot(df, x_col, title, xaxis_title):
     )
     
     # Apply a clean, brutalist-friendly aesthetic
-    fig.update_layout(template='plotly_white', font=dict(family='monospace'))
+    fig.update_layout(template='plotly_dark', font=dict(family='monospace'), autosize=True)
     return json.loads(fig.to_json())
 
 def create_raincloud(hit_df, sp_df, rp_df):
@@ -32,7 +32,7 @@ def create_raincloud(hit_df, sp_df, rp_df):
     fig = go.Figure()
     
     datasets = [
-        ("Hitters", hit_df, "black"),
+        ("Hitters", hit_df, "white"),
         ("Starting Pitchers", sp_df, "blue"),
         ("Relief Pitchers", rp_df, "red")
     ]
@@ -53,8 +53,9 @@ def create_raincloud(hit_df, sp_df, rp_df):
     fig.update_layout(
         title="Positional Distribution & Scarcity",
         yaxis_title="Total Fantasy Points",
-        template='plotly_white',
+        template='plotly_dark',
         font=dict(family='monospace'),
+        autosize=True,
         violingap=0.3
     )
     return json.loads(fig.to_json())
@@ -151,7 +152,7 @@ def create_pie_chart(df, weights: ScoringWeights, title, is_pitcher=False):
         hovertemplate="<b>%{label}</b><br>Total Points: %{customdata:,.1f}<br>Share of Economy: %{percent}<extra></extra>"
     )])
     
-    fig.update_layout(title=title, template='plotly_white', font=dict(family='monospace'))
+    fig.update_layout(title=title, template='plotly_dark', font=dict(family='monospace'), autosize=True)
     return json.loads(fig.to_json())
 
 def build_dashboard_graphs(hit_df, sp_df, rp_df, weights: ScoringWeights, pitcher_talent_stat):
