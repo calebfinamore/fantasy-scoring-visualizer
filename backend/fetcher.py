@@ -27,5 +27,6 @@ def fetch_raw_data():
     
     steamer_bat = pd.DataFrame(requests.get(bat_url).json())
     steamer_pit = pd.DataFrame(requests.get(pit_url).json())
+
     
     return hit_actuals, pitch_actuals, steamer_bat, steamer_pit

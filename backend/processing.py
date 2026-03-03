@@ -59,10 +59,26 @@ class ScoringWeights(BaseModel):
     ptl: float = 0.0
     svhd: float = 0.0
 
-def calculate_fantasy_points(df: pd.DataFrame, weights: ScoringWeights, is_pitcher: bool = False):
+def calculate_fantasy_points(df: pd.DataFrame, weights: ScoringWeights, is_pitcher: bool = False, true_decimal_ip=False):
     """Calculates total fantasy points using exhaustive user inputs."""
     df = df.copy()
-    
+        
+    expected_hitting_cols = [
+    'R', 'H', '2B', '3B', 'HR', 'TB', 'RBI', 'BB', 'SO', 'SB', 'AB',
+    'GWRBI', 'IBB', 'HBP', 'SH', 'SF', 'CS', 'GIDP', 'CYC', 'GSHR', 'BTW', 'BTL'
+    ]
+    expected_pitching_cols = [
+        'IP', 'ER', 'W', 'L', 'SV', 'BS', 'G', 'GS', 'WP', 'BK', 'PKO',
+        'QS', 'CG', 'NH', 'PG', 'TBF', 'Pitches', 'HLD', 'SHO', 'PTW', 'PTL'
+    ]
+
+    expected_cols = expected_pitching_cols if is_pitcher else expected_hitting_cols
+    for col in expected_cols:
+        if col not in df.columns:
+            df[col] = 0
+        else:
+            df[col] = df[col].fillna(0)
+        
     if not is_pitcher:
         # Derive composite stats if they aren't explicitly in the dataset
         singles = df.get('H', 0) - df.get('2B', 0) - df.get('3B', 0) - df.get('HR', 0)
@@ -97,56 +113,65 @@ def calculate_fantasy_points(df: pd.DataFrame, weights: ScoringWeights, is_pitch
             (df.get('BTL', 0) * weights.btl)
         )
     else:
-        # Calculate outs from IP. Standard fractional IP: 1.1 = 1 inning, 1 out (4 total outs)
-        # We handle this by multiplying whole innings by 3, and adding the remainder decimal * 10
-        # e.g., 5.2 IP -> (5 * 3) + (2) = 17 outs. 
-        # (FanGraphs/pybaseball typically provide IP as floats like 5.1, 5.2)
-        outs = (df.get('IP', 0) // 1 * 3) + ((df.get('IP', 0) % 1) * 10)
-        
+        if true_decimal_ip:
+            outs = df['IP'] * 3
+        else:
+            outs = (df['IP'] // 1 * 3) + ((df['IP'] % 1) * 10)
+
         svhd = df.get('SV', 0) + df.get('HLD', 0)
         sop = df.get('SV', 0) + df.get('BS', 0)
-        
-        df['Fantasy_Points'] = (
-            (outs * weights.ip_outs) +
-            (df.get('ER', 0) * weights.er) +
-            (df.get('SO', 0) * weights.k_pitch) +
-            (df.get('SHO', 0) * weights.sho) +
-            (df.get('W', 0) * weights.w) +
-            (df.get('L', 0) * weights.l) +
-            (df.get('SV', 0) * weights.sv) +
-            (df.get('BS', 0) * weights.bs) +
-            (df.get('G', 0) * weights.g) +
-            (df.get('GS', 0) * weights.gs) +
-            (df.get('H', 0) * weights.h_allow) +
-            (df.get('R', 0) * weights.ra) +
-            (df.get('HR', 0) * weights.hr_allow) +
-            (df.get('BB', 0) * weights.bb_allow) +
-            (df.get('HBP', 0) * weights.hb_pitch) +
-            (df.get('WP', 0) * weights.wp) +
-            (df.get('BK', 0) * weights.balks) +
-            (df.get('PKO', 0) * weights.pko) +
-            (df.get('QS', 0) * weights.qs) +
-            (df.get('CG', 0) * weights.cg) +
-            (df.get('NH', 0) * weights.nh) +
-            (df.get('PG', 0) * weights.pg) +
-            (df.get('TBF', 0) * weights.bf) +
-            (df.get('Pitches', 0) * weights.pc) +
-            (sop * weights.sop) +
-            (df.get('HLD', 0) * weights.hd) +
-            (df.get('PTW', 0) * weights.ptw) +
-            (df.get('PTL', 0) * weights.ptl) +
-            (svhd * weights.svhd)
-        )
+
+        terms = [
+            ('ip_outs',   outs * weights.ip_outs),
+            ('er',        df['ER'] * weights.er),
+            ('k_pitch',   df['SO'] * weights.k_pitch),
+            ('sho',       df['SHO'] * weights.sho),
+            ('w',         df['W'] * weights.w),
+            ('l',         df['L'] * weights.l),
+            ('sv',        df['SV'] * weights.sv),
+            ('bs',        df['BS'] * weights.bs),
+            ('g',         df['G'] * weights.g),
+            ('gs',        df['GS'] * weights.gs),
+            ('h_allow',   df['H'] * weights.h_allow),
+            ('ra',        df['R'] * weights.ra),
+            ('hr_allow',  df['HR'] * weights.hr_allow),
+            ('bb_allow',  df['BB'] * weights.bb_allow),
+            ('hb_pitch',  df['HBP'] * weights.hb_pitch),
+            ('wp',        df['WP'] * weights.wp),
+            ('balks',     df['BK'] * weights.balks),
+            ('pko',       df['PKO'] * weights.pko),
+            ('qs',        df['QS'] * weights.qs),
+            ('cg',        df['CG'] * weights.cg),
+            ('nh',        df['NH'] * weights.nh),
+            ('pg',        df['PG'] * weights.pg),
+            ('bf',        df['TBF'] * weights.bf),
+            ('pc',        df['Pitches'] * weights.pc),
+            ('sop',       sop * weights.sop),
+            ('hd',        df['HLD'] * weights.hd),
+            ('ptw',       df['PTW'] * weights.ptw),
+            ('ptl',       df['PTL'] * weights.ptl),
+            ('svhd',      svhd * weights.svhd),
+        ]
+
+        running = 0
+        for name, term in terms:
+            running = running + term
+            if hasattr(running, 'isna') and running.isna().any():
+                print(f"NaN introduced at: {name}")
+                print(f"term head: {term.head(3).tolist()}")
+                print(f"term dtype: {term.dtype}")
+                break
+
+        df['Fantasy_Points'] = sum(t for _, t in terms)
     return df
 
-def filter_player_pool(df_hitters: pd.DataFrame, df_pitchers: pd.DataFrame):
-    """Splits pitchers and applies the volume + fantasy points threshold."""
-    df_pitchers['is_SP'] = (df_pitchers.get('GS', 0) / df_pitchers.get('G', 1)) > 0.5
+def filter_player_pool(df_hitters, df_pitchers, sp_ip_floor=80):
+    df_pitchers['is_SP'] = (df_pitchers['GS'] / df_pitchers['G'].replace(0, 1)) > 0.5
     df_starters = df_pitchers[df_pitchers['is_SP']]
     df_relievers = df_pitchers[~df_pitchers['is_SP']]
 
-    hitters_final = df_hitters[df_hitters.get('PA', 0) >= 250].sort_values(by='Fantasy_Points', ascending=False).head(250)
-    starters_final = df_starters[df_starters.get('IP', 0) >= 80].sort_values(by='Fantasy_Points', ascending=False).head(150)
-    relievers_final = df_relievers[df_relievers.get('G', 0) >= 30].sort_values(by='Fantasy_Points', ascending=False).head(100)
-    
+    hitters_final = df_hitters[df_hitters['PA'] >= 250].sort_values(by='Fantasy_Points', ascending=False).head(250)
+    starters_final = df_starters[df_starters['IP'] >= sp_ip_floor].sort_values(by='Fantasy_Points', ascending=False).head(150)
+    relievers_final = df_relievers[df_relievers['G'] >= 30].sort_values(by='Fantasy_Points', ascending=False).head(100)
+
     return hitters_final, starters_final, relievers_final

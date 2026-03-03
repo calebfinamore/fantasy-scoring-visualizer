@@ -67,8 +67,9 @@ def calculate_category_totals(df, weights: ScoringWeights, is_pitcher=False):
         singles = df.get('H', pd.Series([0])) - df.get('2B', pd.Series([0])) - df.get('3B', pd.Series([0])) - df.get('HR', pd.Series([0]))
         xbh = df.get('2B', pd.Series([0])) + df.get('3B', pd.Series([0])) + df.get('HR', pd.Series([0]))
         sbn = df.get('SB', pd.Series([0])) - df.get('CS', pd.Series([0]))
-        
+
         totals['Runs'] = df.get('R', pd.Series([0])).sum() * weights.r
+        totals['Hits'] = df.get('H', pd.Series([0])).sum() * weights.h_hit
         totals['Singles'] = singles.sum() * weights.b1
         totals['Doubles'] = df.get('2B', pd.Series([0])).sum() * weights.b2
         totals['Triples'] = df.get('3B', pd.Series([0])).sum() * weights.b3
@@ -78,22 +79,54 @@ def calculate_category_totals(df, weights: ScoringWeights, is_pitcher=False):
         totals['Walks'] = df.get('BB', pd.Series([0])).sum() * weights.bb_hit
         totals['Strikeouts'] = df.get('SO', pd.Series([0])).sum() * weights.k_hit
         totals['Stolen Bases'] = df.get('SB', pd.Series([0])).sum() * weights.sb
-        # Add a few derived categories for completeness
         totals['Extra Base Hits'] = xbh.sum() * weights.xbh
         totals['Net Stolen Bases'] = sbn.sum() * weights.sbn
+        totals['At Bats'] = df.get('AB', pd.Series([0])).sum() * weights.ab
+        totals['Game Winning RBI'] = df.get('GWRBI', pd.Series([0])).sum() * weights.gwrbi
+        totals['Int. Walks'] = df.get('IBB', pd.Series([0])).sum() * weights.ibb
+        totals['Hit By Pitch'] = df.get('HBP', pd.Series([0])).sum() * weights.hbp_hit
+        totals['Sacrifices'] = (df.get('SH', pd.Series([0])) + df.get('SF', pd.Series([0]))).sum() * weights.sac
+        totals['Caught Stealing'] = df.get('CS', pd.Series([0])).sum() * weights.cs
+        totals['GIDP'] = df.get('GIDP', pd.Series([0])).sum() * weights.gidp
+        totals['Cycle'] = df.get('CYC', pd.Series([0])).sum() * weights.cyc
+        totals['Grand Slam'] = df.get('GSHR', pd.Series([0])).sum() * weights.gshr
+        totals['Batter Team Win'] = df.get('BTW', pd.Series([0])).sum() * weights.btw
+        totals['Batter Team Loss'] = df.get('BTL', pd.Series([0])).sum() * weights.btl
+
     else:
         outs = (df.get('IP', pd.Series([0])) // 1 * 3) + ((df.get('IP', pd.Series([0])) % 1) * 10)
         svhd = df.get('SV', pd.Series([0])) + df.get('HLD', pd.Series([0]))
-        
+        sop = df.get('SV', pd.Series([0])) + df.get('BS', pd.Series([0]))
+
         totals['Outs (IP)'] = outs.sum() * weights.ip_outs
         totals['Earned Runs'] = df.get('ER', pd.Series([0])).sum() * weights.er
         totals['Strikeouts'] = df.get('SO', pd.Series([0])).sum() * weights.k_pitch
+        totals['Shutouts'] = df.get('SHO', pd.Series([0])).sum() * weights.sho
         totals['Wins'] = df.get('W', pd.Series([0])).sum() * weights.w
         totals['Losses'] = df.get('L', pd.Series([0])).sum() * weights.l
         totals['Saves'] = df.get('SV', pd.Series([0])).sum() * weights.sv
-        totals['Walks Allowed'] = df.get('BB', pd.Series([0])).sum() * weights.bb_allow
+        totals['Blown Saves'] = df.get('BS', pd.Series([0])).sum() * weights.bs
+        totals['Games'] = df.get('G', pd.Series([0])).sum() * weights.g
+        totals['Games Started'] = df.get('GS', pd.Series([0])).sum() * weights.gs
         totals['Hits Allowed'] = df.get('H', pd.Series([0])).sum() * weights.h_allow
+        totals['Runs Allowed'] = df.get('R', pd.Series([0])).sum() * weights.ra
+        totals['HR Allowed'] = df.get('HR', pd.Series([0])).sum() * weights.hr_allow
+        totals['Walks Allowed'] = df.get('BB', pd.Series([0])).sum() * weights.bb_allow
+        totals['Hit Batsmen'] = df.get('HBP', pd.Series([0])).sum() * weights.hb_pitch
+        totals['Wild Pitches'] = df.get('WP', pd.Series([0])).sum() * weights.wp
+        totals['Balks'] = df.get('BK', pd.Series([0])).sum() * weights.balks
+        totals['Pick Offs'] = df.get('PKO', pd.Series([0])).sum() * weights.pko
+        totals['Quality Starts'] = df.get('QS', pd.Series([0])).sum() * weights.qs
+        totals['Complete Games'] = df.get('CG', pd.Series([0])).sum() * weights.cg
+        totals['No Hitters'] = df.get('NH', pd.Series([0])).sum() * weights.nh
+        totals['Perfect Games'] = df.get('PG', pd.Series([0])).sum() * weights.pg
+        totals['Batters Faced'] = df.get('TBF', pd.Series([0])).sum() * weights.bf
+        totals['Pitch Count'] = df.get('Pitches', pd.Series([0])).sum() * weights.pc
+        totals['Save Opportunities'] = sop.sum() * weights.sop
+        totals['Holds'] = df.get('HLD', pd.Series([0])).sum() * weights.hd
         totals['Saves + Holds'] = svhd.sum() * weights.svhd
+        totals['Pitcher Team Win'] = df.get('PTW', pd.Series([0])).sum() * weights.ptw
+        totals['Pitcher Team Loss'] = df.get('PTL', pd.Series([0])).sum() * weights.ptl
 
     return totals
 
@@ -121,13 +154,13 @@ def create_pie_chart(df, weights: ScoringWeights, title, is_pitcher=False):
     fig.update_layout(title=title, template='plotly_white', font=dict(family='monospace'))
     return json.loads(fig.to_json())
 
-def build_dashboard_graphs(hit_df, sp_df, rp_df, weights: ScoringWeights):
-    """Master function to build all 6 graphs and return them as a dictionary."""
-    return {
-        "scatter_hitters": create_scatterplot(hit_df, 'wRC+', 'Hitters: True Talent vs Fantasy Output', 'wRC+'),
-        "scatter_pitchers": create_scatterplot(sp_df, 'SIERA', 'Starting Pitchers: True Talent vs Fantasy Output', 'SIERA'),
-        "raincloud": create_raincloud(hit_df, sp_df, rp_df),
-        "pie_hitters": create_pie_chart(hit_df, weights, "Hitters: Scoring Economy", is_pitcher=False),
-        "pie_sp": create_pie_chart(sp_df, weights, "Starting Pitchers: Scoring Economy", is_pitcher=True),
-        "pie_rp": create_pie_chart(rp_df, weights, "Relief Pitchers: Scoring Economy", is_pitcher=True)
-    }
+def build_dashboard_graphs(hit_df, sp_df, rp_df, weights: ScoringWeights, pitcher_talent_stat):
+     """Master function to build all 6 graphs and return them as a dictionary."""
+     return {
+         "scatter_hitters": create_scatterplot(hit_df, 'wRC+', 'Hitters: True Talent vs Fantasy Output', 'wRC+'),
+         "scatter_pitchers": create_scatterplot(sp_df, pitcher_talent_stat, f'Starting Pitchers: True Talent vs Fantasy Output', pitcher_talent_stat),
+         "raincloud": create_raincloud(hit_df, sp_df, rp_df),
+         "pie_hitters": create_pie_chart(hit_df, weights, "Hitters: Scoring Economy", is_pitcher=False),
+         "pie_sp": create_pie_chart(sp_df, weights, "Starting Pitchers: Scoring Economy", is_pitcher=True),
+         "pie_rp": create_pie_chart(rp_df, weights, "Relief Pitchers: Scoring Economy", is_pitcher=True)
+     }

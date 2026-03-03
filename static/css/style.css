@@ -133,18 +133,13 @@
         }
 
         .tab-content.active {
-            display: block;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
         }
-
         .graph-container {
             border: 2px solid var(--border-color);
             background-color: var(--surface-color);
             margin-bottom: 15px;
             min-height: 400px;
-        }
-        
-        .graphs-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
         }
