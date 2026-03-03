@@ -79,10 +79,13 @@ def calculate_fantasy_points(df: pd.DataFrame, weights: ScoringWeights, is_pitch
         else:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)        
     if not is_pitcher:
+        
         # Derive composite stats if they aren't explicitly in the dataset
         singles = df.get('H', 0) - df.get('2B', 0) - df.get('3B', 0) - df.get('HR', 0)
         xbh = df.get('2B', 0) + df.get('3B', 0) + df.get('HR', 0)
         sbn = df.get('SB', 0) - df.get('CS', 0)
+        if 'TB' not in df.columns or df['TB'].sum() == 0:
+            df['TB'] = df['H'] + df['2B'] + (2 * df['3B']) + (3 * df['HR'])
         
         # Use .get() to prevent KeyError on rare stats like GWRBI or CYC
         df['Fantasy_Points'] = (
