@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Baseball Scoring Sandbox</title>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="static\css\style.css">
+</head>
+<body>
+
+    <header class="panel" style="margin-bottom: 20px;">
+        <h1>Fantasy Baseball Scoring Sandbox</h1>
+        <div class="button-group">
+            <button id="btn-espn">ESPN Defaults</button>
+            <button id="btn-fangraphs">FanGraphs Settings</button>
+            <button id="btn-ethan">Ethan's Settings</button>
+            <button id="btn-reset">Reset (0.0)</button>
+            <button id="btn-pdf" style="background-color: var(--accent-color); color: white;">Generate PDF</button>
+            <button id="btn-calculate" style="margin-left: auto; border: 3px solid black; background-color: #ffff00;">RUN CALCULATIONS</button>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        
+        <section class="panel" id="input-section">
+            <h2>Scoring Weights</h2>
+            <form id="scoring-form">
+                
+                <fieldset>
+                    <legend>HITTING</legend>
+                    <div class="input-grid">
+                        <label>Runs (R): <input type="number" id="w-r" step="0.5" value="0"></label>
+                        <label>Singles (1B): <input type="number" id="w-b1" step="0.5" value="0"></label>
+                        <label>Doubles (2B): <input type="number" id="w-b2" step="0.5" value="0"></label>
+                        <label>Triples (3B): <input type="number" id="w-b3" step="0.5" value="0"></label>
+                        <label>Home Runs (HR): <input type="number" id="w-hr" step="0.5" value="0"></label>
+                        <label>Total Bases (TB): <input type="number" id="w-tb" step="0.5" value="0"></label>
+                        <label>RBI: <input type="number" id="w-rbi" step="0.5" value="0"></label>
+                        <label>Walks (BB): <input type="number" id="w-bb_hit" step="0.5" value="0"></label>
+                        <label>Strikeouts (K): <input type="number" id="w-k_hit" step="0.5" value="0"></label>
+                        <label>Stolen Bases (SB): <input type="number" id="w-sb" step="0.5" value="0"></label>
+                        <label>At Bats (AB): <input type="number" id="w-ab" step="0.5" value="0"></label>
+                        <label>Hits (H): <input type="number" id="w-h_hit" step="0.5" value="0"></label>
+                        <label>Extra Base Hits (XBH): <input type="number" id="w-xbh" step="0.5" value="0"></label>
+                        <label>Game Win RBI (GWRBI): <input type="number" id="w-gwrbi" step="0.5" value="0"></label>
+                        <label>Int Walks (IBB): <input type="number" id="w-ibb" step="0.5" value="0"></label>
+                        <label>Hit By Pitch (HBP): <input type="number" id="w-hbp_hit" step="0.5" value="0"></label>
+                        <label>Sacrifices (SAC): <input type="number" id="w-sac" step="0.5" value="0"></label>
+                        <label>Caught Stealing (CS): <input type="number" id="w-cs" step="0.5" value="0"></label>
+                        <label>Net Stolen Bases (SBN): <input type="number" id="w-sbn" step="0.5" value="0"></label>
+                        <label>Grnd into DP (GIDP): <input type="number" id="w-gidp" step="0.5" value="0"></label>
+                        <label>Cycle (CYC): <input type="number" id="w-cyc" step="0.5" value="0"></label>
+                        <label>Grand Slam (GSHR): <input type="number" id="w-gshr" step="0.5" value="0"></label>
+                        <label>Team Win (BTW): <input type="number" id="w-btw" step="0.5" value="0"></label>
+                        <label>Team Loss (BTL): <input type="number" id="w-btl" step="0.5" value="0"></label>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>PITCHING</legend>
+                    <div class="input-grid">
+                        <label>IP (Per Out): <input type="number" id="w-ip_outs" step="0.1" value="0"></label>
+                        <label>Earned Runs (ER): <input type="number" id="w-er" step="0.5" value="0"></label>
+                        <label>Strikeouts (K): <input type="number" id="w-k_pitch" step="0.5" value="0"></label>
+                        <label>Shutouts (SO): <input type="number" id="w-sho" step="0.5" value="0"></label>
+                        <label>Wins (W): <input type="number" id="w-w" step="0.5" value="0"></label>
+                        <label>Losses (L): <input type="number" id="w-l" step="0.5" value="0"></label>
+                        <label>Saves (SV): <input type="number" id="w-sv" step="0.5" value="0"></label>
+                        <label>Blown Saves (BS): <input type="number" id="w-bs" step="0.5" value="0"></label>
+                        <label>Games (G): <input type="number" id="w-g" step="0.5" value="0"></label>
+                        <label>Games Started (GS): <input type="number" id="w-gs" step="0.5" value="0"></label>
+                        <label>Hits Allowed (H): <input type="number" id="w-h_allow" step="0.5" value="0"></label>
+                        <label>Runs Allowed (RA): <input type="number" id="w-ra" step="0.5" value="0"></label>
+                        <label>HR Allowed (HR): <input type="number" id="w-hr_allow" step="0.5" value="0"></label>
+                        <label>Walks Issued (BB): <input type="number" id="w-bb_allow" step="0.5" value="0"></label>
+                        <label>Hit Batsmen (HB): <input type="number" id="w-hb_pitch" step="0.5" value="0"></label>
+                        <label>Wild Pitches (WP): <input type="number" id="w-wp" step="0.5" value="0"></label>
+                        <label>Balks (B): <input type="number" id="w-balks" step="0.5" value="0"></label>
+                        <label>Pick Offs (PKO): <input type="number" id="w-pko" step="0.5" value="0"></label>
+                        <label>Quality Starts (QS): <input type="number" id="w-qs" step="0.5" value="0"></label>
+                        <label>Complete Games (CG): <input type="number" id="w-cg" step="0.5" value="0"></label>
+                        <label>No Hitters (NH): <input type="number" id="w-nh" step="0.5" value="0"></label>
+                        <label>Perfect Games (PG): <input type="number" id="w-pg" step="0.5" value="0"></label>
+                        <label>Batters Faced (BF): <input type="number" id="w-bf" step="0.5" value="0"></label>
+                        <label>Pitch Count (PC): <input type="number" id="w-pc" step="0.5" value="0"></label>
+                        <label>Save Opps (SOP): <input type="number" id="w-sop" step="0.5" value="0"></label>
+                        <label>Holds (HD): <input type="number" id="w-hd" step="0.5" value="0"></label>
+                        <label>Team Win (PTW): <input type="number" id="w-ptw" step="0.5" value="0"></label>
+                        <label>Team Loss (PTL): <input type="number" id="w-ptl" step="0.5" value="0"></label>
+                        <label>Saves + Holds (SVHD): <input type="number" id="w-svhd" step="0.5" value="0"></label>
+                    </div>
+                </fieldset>
+            </form>
+        </section>
+
+        <section class="panel" id="graphs-section">
+            <nav class="tabs">
+                <button class="tab-btn active" id="tab-actuals" onclick="switchTab('actuals')">Actuals (2025)</button>
+                <button class="tab-btn" id="tab-projections" onclick="switchTab('projections')">Projections (2026)</button>
+            </nav>
+
+            <div id="actuals-content" class="tab-content active graphs-grid">
+                <div id="actuals-raincloud" class="graph-container"></div>
+                <div id="actuals-scatter-hit" class="graph-container"></div>
+                <div id="actuals-scatter-pit" class="graph-container"></div>
+                <div id="actuals-pie-hit" class="graph-container"></div>
+                <div id="actuals-pie-sp" class="graph-container"></div>
+                <div id="actuals-pie-rp" class="graph-container"></div>
+            </div>
+
+            <div id="projections-content" class="tab-content graphs-grid">
+                <div id="proj-raincloud" class="graph-container"></div>
+                <div id="proj-scatter-hit" class="graph-container"></div>
+                <div id="proj-scatter-pit" class="graph-container"></div>
+                <div id="proj-pie-hit" class="graph-container"></div>
+                <div id="proj-pie-sp" class="graph-container"></div>
+                <div id="proj-pie-rp" class="graph-container"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

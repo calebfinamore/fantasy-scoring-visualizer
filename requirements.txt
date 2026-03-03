@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pandas
+pybaseball
+requests
+plotly
+statsmodels
