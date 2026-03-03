@@ -16,21 +16,76 @@ function switchTab(tabId) {
 // Map of the backend variables to their preset values
 const presetESPN = {
     // Hitting
-    r: 1, b1: 1, b2: 2, b3: 3, hr: 4, rbi: 1, bb_hit: 1, k_hit: -1, sb: 1,
-    // Pitching (IP in ESPN is 3 pts per inning, so 1 pt per out)
-    ip_outs: 1, er: -2, w: 5, l: -5, sv: 5, k_pitch: 1, h_allow: -1, bb_allow: -1
+    r: 1,
+    tb: 1,
+    rbi: 1,
+    bb_hit: 1,
+    k_hit: -1,
+    sb: 1,
+    // Pitching
+    ip_outs: 1,
+    h_allow: -1,
+    er: -2,
+    hd: 2,
+    bb_allow: -1,
+    k_pitch: 1,
+    w: 5,
+    l: -2,
+    sv: 5
 };
 
 const presetFanGraphs = {
-    // FanGraphs Ottoneu Points
-    ab: -1, h_hit: 5.6, b2: 2.9, b3: 5.7, hr: 9.4, bb_hit: 3, hbp_hit: 3, sb: 1.9, cs: -2.8,
-    ip_outs: 2.46, k_pitch: 2, h_allow: -2.6, bb_allow: -3, hb_pitch: -3, hr_allow: -13.7
+    // Hitting
+    ab: -1.0,
+    h_hit: 5.6,
+    b2: 2.9,
+    b3: 5.7,
+    hr: 9.4,
+    bb_hit: 3.0,
+    hbp_hit: 3.0,
+    sb: 1.9,
+    cs: -2.8,
+    // Pitching
+    ip_outs: 2.47,
+    k_pitch: 2.0,
+    h_allow: -2.6,
+    bb_allow: -3.0,
+    hb_pitch: -3.0,
+    hr_allow: -12.3,
+    sv: 5.0,
+    hd: 4.0
 };
 
 const presetEthan = {
-    // Fill in your specific league settings here
-    r: 1, b1: 1, b2: 2, b3: 3, hr: 4, rbi: 1,
-    ip_outs: 1, er: -2, k_pitch: 1, w: 5, sv: 5
+    // Hitting
+    r: 1,
+    b1: 0.5,
+    xbh: 0.5,
+    tb: 1,
+    rbi: 1,
+    bb_hit: 1,
+    k_hit: -0.5,
+    hbp_hit: 0.5,
+    sb: 1,
+    cyc: 25,
+    gshr: 5,
+    // Pitching
+    ip_outs: 1.1,
+    h_allow: -1,
+    er: -2,
+    bb_allow: -1,
+    k_pitch: 1.1,
+    balks: -1,
+    qs: 4,
+    cg: 10,
+    sho: 5,
+    nh: 15,
+    pg: 30,
+    w: 2,
+    l: -2,
+    sv: 5,
+    bs: -3,
+    hd: 3
 };
 
 // --- FORM MANAGEMENT ---
