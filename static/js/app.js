@@ -15,6 +15,11 @@ function switchTab(tabId) {
 // --- PRESET SCORING DICTIONARIES ---
 // Map of the backend variables to their preset values
 const presetESPN = {
+    // League Rosters
+    teams: 10,
+    hitters: 10,
+    sp: 7,
+    rp: 2,
     // Hitting
     r: 1,
     tb: 1,
@@ -35,6 +40,11 @@ const presetESPN = {
 };
 
 const presetFanGraphs = {
+    // League Rosters
+    teams: 14,
+    hitters: 10,
+    sp: 6,
+    rp: 2,
     // Hitting
     ab: -1.0,
     h_hit: 5.6,
@@ -57,6 +67,11 @@ const presetFanGraphs = {
 };
 
 const presetEthan = {
+    // League Rosters
+    teams: 12,
+    hitters: 11,
+    sp: 6,
+    rp: 1,
     // Hitting
     r: 1,
     b1: 0.5,
@@ -97,21 +112,31 @@ function fillInputs(preset) {
 
     // Then, apply the preset values
     for (const [key, value] of Object.entries(preset)) {
-        const inputElement = document.getElementById(`w-${key}`);
+        // Dynamically check for either the weights prefix (w-) or rosters prefix (r-)
+        const inputElement = document.getElementById(`w-${key}`) || document.getElementById(`r-${key}`);
         if (inputElement) {
             inputElement.value = value;
         }
     }
 }
 
-function gatherWeights() {
-    const weights = {};
+function gatherPayload() {
+    const payload = {
+        weights: {},
+        rosters: {}
+    };
+
     document.querySelectorAll('input[type="number"]').forEach(input => {
-        // Extract the key by removing the 'w-' prefix from the ID
-        const key = input.id.replace('w-', '');
-        weights[key] = parseFloat(input.value) || 0;
+        if (input.id.startsWith('w-')) {
+            const key = input.id.replace('w-', '');
+            payload.weights[key] = parseFloat(input.value) || 0;
+        } else if (input.id.startsWith('r-')) {
+            const key = input.id.replace('r-', '');
+            payload.rosters[key] = parseInt(input.value) || 0;
+        }
     });
-    return weights;
+
+    return payload;
 }
 
 // --- EVENT LISTENERS FOR PRESET BUTTONS ---
@@ -123,11 +148,20 @@ document.getElementById('btn-reset').addEventListener('click', () => fillInputs(
 
 // --- CORE CALCULATE AND RENDER LOGIC ---
 document.getElementById('btn-calculate').addEventListener('click', async () => {
+    const payload = gatherPayload();
+
+    // Frontend Validation Check
+    if (
+        payload.rosters.teams === 0 || 
+        (payload.rosters.hitters === 0 && payload.rosters.sp === 0 && payload.rosters.rp === 0)
+    ) {
+        alert("Please specify the Number of Teams and at least one roster spot (Hitters, SPs, or RPs) before calculating.");
+        return; 
+    }
+
     const calculateBtn = document.getElementById('btn-calculate');
     calculateBtn.innerText = "CALCULATING...";
-    calculateBtn.style.backgroundColor = "#647ac4";
-
-    const payload = gatherWeights();
+    calculateBtn.style.backgroundColor = "#3b82f6";
 
     try {
         const response = await fetch('/api/calculate', {
@@ -148,6 +182,7 @@ document.getElementById('btn-calculate').addEventListener('click', async () => {
             Plotly.newPlot('actuals-pie-hit', data.actuals.pie_hitters.data, data.actuals.pie_hitters.layout);
             Plotly.newPlot('actuals-pie-sp', data.actuals.pie_sp.data, data.actuals.pie_sp.layout);
             Plotly.newPlot('actuals-pie-rp', data.actuals.pie_rp.data, data.actuals.pie_rp.layout);
+            Plotly.newPlot('actual-power-balance', data.actuals.stacked.data, data.actuals.stacked.layout);
 
             // Render Projections
             Plotly.newPlot('proj-raincloud', data.projections.raincloud.data, data.projections.raincloud.layout);
@@ -156,6 +191,7 @@ document.getElementById('btn-calculate').addEventListener('click', async () => {
             Plotly.newPlot('proj-pie-hit', data.projections.pie_hitters.data, data.projections.pie_hitters.layout);
             Plotly.newPlot('proj-pie-sp', data.projections.pie_sp.data, data.projections.pie_sp.layout);
             Plotly.newPlot('proj-pie-rp', data.projections.pie_rp.data, data.projections.pie_rp.layout);
+            Plotly.newPlot('proj-power-balance', data.projections.stacked.data, data.projections.stacked.layout);
         } else {
             alert("Error processing data.");
         }
@@ -164,7 +200,7 @@ document.getElementById('btn-calculate').addEventListener('click', async () => {
         alert("Failed to connect to the backend.");
     } finally {
         calculateBtn.innerText = "RUN CALCULATIONS";
-        calculateBtn.style.backgroundColor = "#fbbf24";
+        calculateBtn.style.backgroundColor = "#f59e0b";
         calculateBtn.style.color = "#000000";
     }
 });

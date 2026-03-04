@@ -237,3 +237,67 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
     -moz-appearance: textfield;
 }
+
+/* --- PIE CHART LAYOUT --- */
+.pie-row {
+    display: flex;
+    flex-direction: row; /* Forces side-by-side */
+    flex-wrap: nowrap;   /* Keeps them on one line */
+    gap: 15px;
+    width: 100%;
+    overflow-x: auto;    /* Adds a scrollbar if the screen gets too tiny */
+}
+
+.third-width {
+    flex: 1;             /* Each pie takes up 1/3 of the space */
+    min-width: 300px;    /* Minimum usable width for a pie chart */
+    height: 400px;
+    padding: 5px;
+}
+
+/* --- GENERAL UTILITIES --- */
+.graph-container {
+    box-sizing: border-box;
+    transition: transform 0.2s ease;
+}
+
+/* Hover effect for that Brutalist pop */
+.graph-container:hover {
+    border-color: #fbbf24;
+}
+
+/* Responsive Tweak for Mobile */
+@media (max-width: 900px) {
+    .pie-row {
+        flex-wrap: wrap; /* Stacks them on tablets/phones */
+    }
+    .third-width {
+        flex: 1 1 100%; /* Takes full width on mobile */
+    }
+}
+
+/* --- SCATTER CHART LAYOUT --- */
+.scatter-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 15px;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.half-width {
+    flex: 1;
+    min-width: 400px;
+    height: 400px;
+    padding: 5px;
+}
+
+@media (max-width: 900px) {
+    .scatter-row {
+        flex-wrap: wrap;
+    }
+    .half-width {
+        flex: 1 1 100%;
+    }
+}

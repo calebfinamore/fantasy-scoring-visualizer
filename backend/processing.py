@@ -59,6 +59,16 @@ class ScoringWeights(BaseModel):
     ptl: float = 0.0
     svhd: float = 0.0
 
+class RosterSettings(BaseModel):
+    teams: int = 0
+    hitters: int = 0
+    sp: int = 0
+    rp: int = 0
+
+class DashboardPayload(BaseModel):
+    weights: ScoringWeights
+    rosters: RosterSettings
+
 def calculate_fantasy_points(df: pd.DataFrame, weights: ScoringWeights, is_pitcher: bool = False, true_decimal_ip=False):
     """Calculates total fantasy points using exhaustive user inputs."""
     df = df.copy()
@@ -167,13 +177,18 @@ def calculate_fantasy_points(df: pd.DataFrame, weights: ScoringWeights, is_pitch
         df['Fantasy_Points'] = sum(t for _, t in terms)
     return df
 
-def filter_player_pool(df_hitters, df_pitchers, sp_ip_floor=80):
+def filter_player_pool(df_hitters, df_pitchers, rosters: RosterSettings):
     df_pitchers['is_SP'] = (df_pitchers['GS'] / df_pitchers['G'].replace(0, 1)) > 0.5
     df_starters = df_pitchers[df_pitchers['is_SP']]
     df_relievers = df_pitchers[~df_pitchers['is_SP']]
 
-    hitters_final = df_hitters[df_hitters['PA'] >= 250].sort_values(by='Fantasy_Points', ascending=False).head(250)
-    starters_final = df_starters[df_starters['IP'] >= sp_ip_floor].sort_values(by='Fantasy_Points', ascending=False).head(150)
-    relievers_final = df_relievers[df_relievers['G'] >= 30].sort_values(by='Fantasy_Points', ascending=False).head(100)
+    # Your 1.5x Waiver Wire Buffer Logic
+    hit_limit = round(rosters.teams * rosters.hitters * 1.5)
+    sp_limit = round(rosters.teams * rosters.sp * 1.5)
+    rp_limit = round(rosters.teams * rosters.rp * 1.5)
+
+    hitters_final = df_hitters.sort_values(by='Fantasy_Points', ascending=False).head(hit_limit)
+    starters_final = df_starters.sort_values(by='Fantasy_Points', ascending=False).head(sp_limit)
+    relievers_final = df_relievers.sort_values(by='Fantasy_Points', ascending=False).head(rp_limit)
 
     return hitters_final, starters_final, relievers_final

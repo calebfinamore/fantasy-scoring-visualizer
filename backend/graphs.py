@@ -4,66 +4,142 @@ import pandas as pd
 import json
 from backend.processing import ScoringWeights
 
-def create_scatterplot(df, x_col, title, xaxis_title):
-    """Generates a linear regression scatterplot."""
-    # Determine if this dataset uses 'Name' (pybaseball) or 'PlayerName' (FanGraphs API)
-    hover_col = 'Name' if 'Name' in df.columns else 'PlayerName'
-    
-    # If the column doesn't exist (e.g., SIERA isn't in Steamer projections), return an empty figure
-    if x_col not in df.columns:
-        return json.loads(go.Figure().update_layout(template='plotly_dark', font=dict(family='monospace'), autosize=True, title=f"Data for {x_col} not available").to_json())
-    
-    fig = px.scatter(
-        df, 
-        x=x_col, 
-        y='Fantasy_Points', 
-        hover_name=hover_col, # <--- Dynamically assigns the correct column here
-        trendline='ols', 
-        title=title,
-        labels={x_col: xaxis_title, 'Fantasy_Points': 'Total Fantasy Points'}
+# --- UNIFIED COLOR PALETTE ---
+COLORS = {
+    "hitters": "#3b82f6",   # Amber (matches the UI accent)
+    "sp":      "#a855f7",   # Blue
+    "rp":      "#06b6d4",   # Teal
+    "bg":      "#1a1a1a",   # Surface background
+    "grid":    "#333333",   # Grid/border color
+    "text":    "#e5e5e5",   # Primary text
+    "muted":   "#888888",   # Secondary text
+}
+
+PLOTLY_TEMPLATE = "plotly_dark"
+PLOTLY_FONT = dict(family="monospace", color=COLORS["text"])
+
+def _hex_to_rgb(hex_color):
+    """Converts a hex color like '#f59e0b' to 'rgb(245, 158, 11)' for Plotly."""
+    h = hex_color.lstrip('#')
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgb({r}, {g}, {b})"
+
+def _base_layout(**overrides):
+    """Returns a shared layout dict that every graph starts from."""
+    layout = dict(
+        template=PLOTLY_TEMPLATE,
+        font=PLOTLY_FONT,
+        autosize=True,
+        paper_bgcolor=COLORS["bg"],
+        plot_bgcolor=COLORS["bg"],
     )
-    
-    # Apply a clean, brutalist-friendly aesthetic
-    fig.update_layout(template='plotly_dark', font=dict(family='monospace'), autosize=True)
+    layout.update(overrides)
+    return layout
+
+
+# --- SCATTERPLOTS ---
+def create_scatterplot(df, x_col, title, xaxis_title, color):
+    """Generates a linear regression scatterplot in the given positional color."""
+    hover_col = 'Name' if 'Name' in df.columns else 'PlayerName'
+
+    if df.empty or x_col not in df.columns:
+        empty_fig = go.Figure().update_layout(**_base_layout(title=f"No data available for {title}"))
+        return json.loads(empty_fig.to_json())
+
+    trendline_type = 'ols' if len(df) > 1 else None
+
+    fig = px.scatter(
+        df,
+        x=x_col,
+        y='Fantasy_Points',
+        hover_name=hover_col,
+        trendline=trendline_type,
+        title=title,
+        labels={x_col: xaxis_title, 'Fantasy_Points': 'Total Fantasy Points'},
+        color_discrete_sequence=[color],
+    )
+
+    # Style the trendline to be a subtle white dashed line
+    if trendline_type:
+        fig.update_traces(
+            line=dict(color=COLORS["muted"], dash="dash"),
+            selector=dict(mode="lines")
+        )
+
+    fig.update_layout(**_base_layout())
     return json.loads(fig.to_json())
 
+
+# --- RAINCLOUD PLOT ---
 def create_raincloud(hit_df, sp_df, rp_df):
     """Generates a native Plotly raincloud plot for positional scarcity."""
     fig = go.Figure()
-    
+
     datasets = [
-        ("Hitters", hit_df, "white"),
-        ("Starting Pitchers", sp_df, "blue"),
-        ("Relief Pitchers", rp_df, "red")
+        ("Hitters", hit_df, COLORS["hitters"]),
+        ("Starting Pitchers", sp_df, COLORS["sp"]),
+        ("Relief Pitchers", rp_df, COLORS["rp"]),
     ]
-    
+
     for name, df, color in datasets:
         fig.add_trace(go.Violin(
             y=df['Fantasy_Points'],
             name=name,
-            side='positive',     # Cuts the violin in half
+            side='positive',
             line_color=color,
-            points='all',        # Shows all underlying data points
-            pointpos=-0.5,       # Shifts the scatter points to the left of the violin
+            points='all',
+            pointpos=-0.5,
             jitter=0.05,
-            box_visible=True,    # Adds the boxplot median/quartiles inside the violin
-            meanline_visible=True
+            box_visible=True,
+            meanline_visible=True,
         ))
-        
-    fig.update_layout(
+
+    fig.update_layout(**_base_layout(
         title="Positional Distribution & Scarcity",
         yaxis_title="Total Fantasy Points",
-        template='plotly_dark',
-        font=dict(family='monospace'),
-        autosize=True,
-        violingap=0.3
-    )
+        violingap=0.3,
+    ))
     return json.loads(fig.to_json())
 
+
+# --- STACKED BAR (LEAGUE ECONOMY) ---
+def create_stacked_bar(h_total, sp_total, rp_total):
+    """Generates a horizontal stacked bar showing the league's scoring economy split as percentages."""
+    fig = go.Figure()
+
+    grand_total = h_total + sp_total + rp_total
+    traces = [
+        ('Hitting', h_total, COLORS["hitters"]),
+        ('SP', sp_total, COLORS["sp"]),
+        ('RP', rp_total, COLORS["rp"]),
+    ]
+
+    for name, val, color in traces:
+        if val > 0 and grand_total > 0:
+            pct = val / grand_total * 100
+            fig.add_trace(go.Bar(
+                y=[''], x=[pct], name=f"{name} ({pct:.1f}%)", orientation='h',
+                marker=dict(color=color, line=dict(color='#000', width=2)),
+                hovertemplate=f"<b>{name}</b><br>{pct:.1f}%<br>Total Points: {val:,.0f}<extra></extra>", width=0.3,
+            ))
+
+    fig.update_layout(**_base_layout(
+        title="League Scoring Economy",
+        barmode='stack',
+        margin=dict(l=30, r=30, t=30, b=30),
+        xaxis=dict(showgrid=False, showticklabels=False, range=[0, 100]),
+        yaxis=dict(showgrid=False, showticklabels=False),
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, traceorder="normal"),
+    ))
+    return json.loads(fig.to_json())
+
+
+# --- PIE CHARTS ---
 def calculate_category_totals(df, weights: ScoringWeights, is_pitcher=False):
     """Helper function to calculate the total points generated by each category."""
     totals = {}
-    
+
     if not is_pitcher:
         singles = df.get('H', pd.Series([0])) - df.get('2B', pd.Series([0])) - df.get('3B', pd.Series([0])) - df.get('HR', pd.Series([0]))
         xbh = df.get('2B', pd.Series([0])) + df.get('3B', pd.Series([0])) + df.get('HR', pd.Series([0]))
@@ -93,7 +169,6 @@ def calculate_category_totals(df, weights: ScoringWeights, is_pitcher=False):
         totals['Grand Slam'] = df.get('GSHR', pd.Series([0])).sum() * weights.gshr
         totals['Batter Team Win'] = df.get('BTW', pd.Series([0])).sum() * weights.btw
         totals['Batter Team Loss'] = df.get('BTL', pd.Series([0])).sum() * weights.btl
-
     else:
         outs = (df.get('IP', pd.Series([0])) // 1 * 3) + ((df.get('IP', pd.Series([0])) % 1) * 10)
         svhd = df.get('SV', pd.Series([0])) + df.get('HLD', pd.Series([0]))
@@ -131,37 +206,88 @@ def calculate_category_totals(df, weights: ScoringWeights, is_pitcher=False):
 
     return totals
 
-def create_pie_chart(df, weights: ScoringWeights, title, is_pitcher=False):
-    """Generates the pie chart, using absolute values for slice size to handle negative points."""
+
+def create_pie_chart(df, weights: ScoringWeights, title, is_pitcher=False, accent_color=None):
+    """Generates a pie chart of positive point sources with penalty annotations."""
     totals = calculate_category_totals(df, weights, is_pitcher)
-    
-    labels = []
-    values_abs = []
-    values_real = []
-    
+
+    # Separate positive contributions from penalties
+    pos_labels, pos_values = [], []
+    penalties = []
+
     for k, v in totals.items():
-        if v != 0:
-            labels.append(f"{k} {'(Penalty)' if v < 0 else ''}")
-            values_abs.append(abs(v))
-            values_real.append(v)
+        if v > 0:
+            pos_labels.append(k)
+            pos_values.append(v)
+        elif v < 0:
+            penalties.append((k, v))
             
+    # Sort by value descending so the colorscale maps darkest to largest
+    sorted_pairs = sorted(zip(pos_labels, pos_values), key=lambda x: x[1], reverse=True)
+    pos_labels = [p[0] for p in sorted_pairs]
+    pos_values = [p[1] for p in sorted_pairs]
+
+    # Build a sequential colorscale tinted toward the positional accent color
+    if accent_color:
+        import plotly.colors as pc
+        n = max(len(pos_labels), 1)
+        colorscale = pc.n_colors(_hex_to_rgb(accent_color), _hex_to_rgb(COLORS["text"]), n, colortype="rgb")
+    else:
+        colorscale = None
+
     fig = go.Figure(data=[go.Pie(
-        labels=labels,
-        values=values_abs,
-        customdata=values_real,
-        hovertemplate="<b>%{label}</b><br>Total Points: %{customdata:,.1f}<br>Share of Economy: %{percent}<extra></extra>"
+        labels=pos_labels,
+        values=pos_values,
+        marker=dict(colors=colorscale) if colorscale else {},
+        hovertemplate="<b>%{label}</b><br>Total Points: %{value:,.1f}<br>Share: %{percent}<extra></extra>",
     )])
-    
-    fig.update_layout(title=title, template='plotly_dark', font=dict(family='monospace'), autosize=True)
+
+    # Build a subtitle listing penalties if any exist
+    penalty_str = ""
+    if penalties:
+        parts = [f"{name}: {val:,.0f}" for name, val in penalties]
+        penalty_str = "Penalties — " + ", ".join(parts)
+
+    fig.update_layout(**_base_layout(
+        title=dict(
+            text=f"{title}<br><span style='font-size:11px; color:{COLORS['muted']}'>{penalty_str}</span>" if penalty_str else title,
+        ),
+    ))
     return json.loads(fig.to_json())
 
-def build_dashboard_graphs(hit_df, sp_df, rp_df, weights: ScoringWeights, pitcher_talent_stat):
-     """Master function to build all 6 graphs and return them as a dictionary."""
-     return {
-         "scatter_hitters": create_scatterplot(hit_df, 'wRC+', 'Hitters: True Talent vs Fantasy Output', 'wRC+'),
-         "scatter_pitchers": create_scatterplot(sp_df, pitcher_talent_stat, f'Starting Pitchers: True Talent vs Fantasy Output', pitcher_talent_stat),
-         "raincloud": create_raincloud(hit_df, sp_df, rp_df),
-         "pie_hitters": create_pie_chart(hit_df, weights, "Hitters: Scoring Economy", is_pitcher=False),
-         "pie_sp": create_pie_chart(sp_df, weights, "Starting Pitchers: Scoring Economy", is_pitcher=True),
-         "pie_rp": create_pie_chart(rp_df, weights, "Relief Pitchers: Scoring Economy", is_pitcher=True)
-     }
+
+# --- DASHBOARD ASSEMBLY ---
+def build_dashboard_graphs(df_hitters, df_sp, df_rp, weights, pitcher_talent_stat):
+    """Assembles all Plotly JSONs for a single dashboard view."""
+
+    h_sum = df_hitters['Fantasy_Points'].sum()
+    sp_sum = df_sp['Fantasy_Points'].sum()
+    rp_sum = df_rp['Fantasy_Points'].sum()
+
+    graphs = {
+        "stacked": create_stacked_bar(h_sum, sp_sum, rp_sum),
+        "raincloud": create_raincloud(df_hitters, df_sp, df_rp),
+        "scatter_hitters": create_scatterplot(
+            df_hitters, 'wRC+', "Hitters: Points vs wRC+", "wRC+",
+            color=COLORS["hitters"],
+        ),
+        "scatter_pitchers": create_scatterplot(
+            df_sp, pitcher_talent_stat,
+            f"SPs: Points vs {pitcher_talent_stat}", pitcher_talent_stat,
+            color=COLORS["sp"],
+        ),
+        "pie_hitters": create_pie_chart(
+            df_hitters, weights, "Hitter Point Sources",
+            is_pitcher=False, accent_color=COLORS["hitters"],
+        ),
+        "pie_sp": create_pie_chart(
+            df_sp, weights, "SP Point Sources",
+            is_pitcher=True, accent_color=COLORS["sp"],
+        ),
+        "pie_rp": create_pie_chart(
+            df_rp, weights, "RP Point Sources",
+            is_pitcher=True, accent_color=COLORS["rp"],
+        ),
+    }
+
+    return graphs

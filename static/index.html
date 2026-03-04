@@ -17,15 +17,24 @@
             <button id="btn-fangraphs">FanGraphs Settings</button>
             <button id="btn-ethan">Ethan's Settings</button>
             <button id="btn-reset">Reset (0.0)</button>
-            <button id="btn-pdf">Generate PDF</button>
             <button id="btn-calculate">RUN CALCULATIONS</button>
+            <button id="btn-pdf">Generate PDF</button>
         </div>
     </header>
 
     <main class="dashboard">
         
         <section class="panel" id="input-section">
-            <h2>Scoring Weights</h2>
+            <h2>Rosters & Scoring</h2>
+            <fieldset>
+                    <legend>ROSTERS</legend>
+                    <div class="input-grid">
+                        <label>Teams: <input type="number" id="r-teams" value="0"></label>
+                        <label>Hitters: <input type="number" id="r-hitters" value="0"></label>
+                        <label>SPs: <input type="number" id="r-sp" value="0"></label>
+                        <label>RPs: <input type="number" id="r-rp" value="0"></label>
+                    </div>
+                </fieldset>
             <form id="scoring-form">
                 
                 <fieldset>
@@ -103,20 +112,30 @@
 
             <div id="actuals-content" class="tab-content active">
                 <div id="actuals-raincloud" class="graph-container"></div>
-                <div id="actuals-scatter-hit" class="graph-container"></div>
-                <div id="actuals-scatter-pit" class="graph-container"></div>
-                <div id="actuals-pie-hit" class="graph-container"></div>
-                <div id="actuals-pie-sp" class="graph-container"></div>
-                <div id="actuals-pie-rp" class="graph-container"></div>
+                <div class="scatter-row">
+                    <div id="actuals-scatter-hit" class="graph-container half-width"></div>
+                    <div id="actuals-scatter-pit" class="graph-container half-width"></div>
+                </div>
+                <div id="actual-power-balance" class="graph-container full-width"></div>
+                <div class="pie-row">
+                    <div id="actuals-pie-hit" class="graph-container third-width"></div>
+                    <div id="actuals-pie-sp" class="graph-container third-width"></div>
+                    <div id="actuals-pie-rp" class="graph-container third-width"></div>
+                </div>
             </div>
 
             <div id="projections-content" class="tab-content">
                 <div id="proj-raincloud" class="graph-container"></div>
-                <div id="proj-scatter-hit" class="graph-container"></div>
-                <div id="proj-scatter-pit" class="graph-container"></div>
-                <div id="proj-pie-hit" class="graph-container"></div>
-                <div id="proj-pie-sp" class="graph-container"></div>
-                <div id="proj-pie-rp" class="graph-container"></div>
+                <div class="scatter-row">
+                    <div id="proj-scatter-hit" class="graph-container half-width"></div>
+                    <div id="proj-scatter-pit" class="graph-container half-width"></div>
+                </div>
+                <div id="proj-power-balance" class="graph-container full-width"></div>
+                <div class="pie-row">
+                    <div id="proj-pie-hit" class="graph-container third-width"></div>
+                    <div id="proj-pie-sp" class="graph-container third-width"></div>
+                    <div id="proj-pie-rp" class="graph-container third-width"></div>
+                </div>
             </div>
         </section>
 
