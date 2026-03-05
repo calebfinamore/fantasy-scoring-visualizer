@@ -69,7 +69,7 @@ A web app for visualizing how different fantasy baseball scoring systems affect 
 
 ## Data Sources
 
-- **Actuals** — FanGraphs batting and pitching stats via [pybaseball](https://github.com/jldbc/pybaseball), filtered to qualified hitters (250+ PA) and pitchers (80+ IP for SPs, 30+ G for RPs)
+- **Actuals** — FanGraphs batting and pitching stats via [pybaseball](https://github.com/jldbc/pybaseball), filtered to your league's size based on roster inputs.
 - **Projections** — [Steamer projections](https://www.fangraphs.com/projections) via the FanGraphs API
 
 Player pool is dynamically determined by the current date: before November, actuals reflect the previous season and projections reflect the current season; after November, both shift forward one year.
